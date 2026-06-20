@@ -1,5 +1,5 @@
 # Copyright (c) 2017-2026 Juancarlo Añez (apalala@gmail.com)
-# SPDX-License-Identifier: BSD-4-Clause
+# SPDX-License-Identifier: MIT
 from __future__ import annotations
 
 import random
@@ -157,10 +157,12 @@ def stream_blue_verses(verses: list[str], window_size: int = 10) -> Iterator[str
 
 
 def print_hamlet_verses() -> None:
-    # hamlet_lines = fetch_and_parse_verses(
-    #     HAMLET_URL, cleaning_patterns=THEATRE_CLEANING_PATTERNS
-    # )
-    hamlet_lines = load_work("hamlet", cleaning_patterns=THEATRE_CLEANING_PATTERNS)
+    try:
+        hamlet_lines = load_work("hamlet", cleaning_patterns=THEATRE_CLEANING_PATTERNS)
+    except FileNotFoundError:
+        hamlet_lines = fetch_and_parse_verses(
+            HAMLET_URL, cleaning_patterns=THEATRE_CLEANING_PATTERNS
+        )
     hamlet_stream = stream_blue_verses(hamlet_lines, window_size=15)
 
     start = time.time()
@@ -169,10 +171,12 @@ def print_hamlet_verses() -> None:
 
 
 def print_moby_verses() -> None:
-    # moby_lines = fetch_and_parse_verses(
-    #     MOBY_DICK_URL, cleaning_patterns=NOVEL_CLEANING_PATTERNS
-    # )
-    moby_lines = load_work("moby_dick", cleaning_patterns=NOVEL_CLEANING_PATTERNS)
+    try:
+        moby_lines = load_work("moby_dick", cleaning_patterns=NOVEL_CLEANING_PATTERNS)
+    except FileNotFoundError:
+        moby_lines = fetch_and_parse_verses(
+            MOBY_DICK_URL, cleaning_patterns=NOVEL_CLEANING_PATTERNS
+        )
     moby_stream = stream_blue_verses(moby_lines, window_size=25)
 
     start = time.time()
@@ -182,7 +186,6 @@ def print_moby_verses() -> None:
 
 def main() -> int:
     print_hamlet_verses()
-    # print_moby_verses()
     return 0
 
 
