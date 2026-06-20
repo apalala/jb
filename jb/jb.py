@@ -9,12 +9,13 @@ import urllib.request
 from pathlib import Path
 from typing import Iterator
 
-STREAM_TIME = 3.0
+STREAM_TIME = 5.0
 
+ROOT_PATH = Path(__file__).parent
 
 WORKS_DATABASE = {
-    "hamlet": Path() / "works/pg1524.txt.bmx",
-    "mobi_dick": Path() / "works/pg2700.txt.bmx",
+    "hamlet": Path("works/pg1524.txt.bmx"),
+    "mobi_dick": Path("works/pg2700.txt.bmx"),
 }
 
 
@@ -25,20 +26,20 @@ MOBY_DICK_URL = "https://www.gutenberg.org/cache/epub/2701/pg2701.txt"
 # Agnostic Cleaning Presets
 THEATRE_CLEANING_PATTERNS = [
     # 1. Matches leading speaker tags: e.g., "HAMLET.", "HORATIO:", "HAM_1."
-    re.compile(r"^[A-Z0-9_\s]{2,15}[\.\:]\s*"),
+    r"(?m)^[A-Z0-9_\s]{2,15}[.:]\s*",
     # 2. Matches stage directions inside brackets or parentheses: e.g., "[Exit Ghost]"
-    re.compile(r"[\\[\(].*?[\\]\)]"),
+    r"(?m)[\[(].*?[\])]",
 ]
 
 NOVEL_CLEANING_PATTERNS = [
     # Matches typical Gutenberg chapter headers or illustration markers
-    re.compile(r"^(CHAPTER|C_H_A_P_T_E_R)\s+[IVX0-9]+.*", re.IGNORECASE),
+    r"^(CHAPTER|C_H_A_P_T_E_R)\s+[IVX0-9]+.*",
 ]
 
 
 def fetch_and_parse_verses(
     url: str,
-    cleaning_patterns: list[re.Pattern] | None = None,
+    cleaning_patterns: list[str] | None = None,
 ) -> list[str]:
     """Downloads a text file from Gutenberg, strips metadata, and applies cleaning filters."""
     # print(f"Fetching source text from {url}...")
@@ -50,11 +51,15 @@ def fetch_and_parse_verses(
 
 def load_work(
     name: str,
-    cleaning_patterns: list[re.Pattern] | None = None,
+    cleaning_patterns: list[str],
 ) -> list[str]:
     from .bmx import unseal_text
 
-    path = WORKS_DATABASE[name]
+    file_path = WORKS_DATABASE[name]
+    path = ROOT_PATH / file_path
+    if not path.exists():
+        path = ROOT_PATH.parent / file_path
+
     compressed = path.read_text()
     unsealed = unseal_text(compressed)
     return parse_verses(unsealed, cleaning_patterns=cleaning_patterns)
@@ -62,11 +67,8 @@ def load_work(
 
 def parse_verses(
     raw_text: str,
-    cleaning_patterns: list[re.Pattern] | None = None,
+    cleaning_patterns: list[str],
 ) -> list[str]:
-    if cleaning_patterns is None:
-        cleaning_patterns = []
-
     raw_lines = [line.strip() for line in raw_text.splitlines()]
 
     # Basic cleanup: remove empty lines and metadata lines
@@ -92,13 +94,13 @@ def parse_verses(
             break
 
     active_body = lines[start_idx:end_idx]
-    patterns = cleaning_patterns or []
+    patterns = cleaning_patterns
     cleaned_verses: list[str] = []
 
     for line in active_body:
         # Apply the provided sequence of agnostic filters
         for pattern in patterns:
-            line = pattern.sub("", line)
+            line = re.sub(pattern, "", line)
 
         line = line.strip()
 
@@ -133,28 +135,32 @@ def stream_blue_verses(verses: list[str], window_size: int = 10) -> Iterator[str
 
     total_lines = len(verses)
     noise_stream = stream_blue_signal()
-
     # Start our tracking index in the middle of the play
-    current_idx = total_lines // 2
-
+    current_idx = random.randint(0, total_lines - 1)
+    recent_verses = set([""] * window_size)
     while True:
-        # 1. Pull next raw blue noise step (-3.0 to +3.0 scale roughly)
+        # Pull next raw blue noise step (-3.0 to +3.0 scale roughly)
         step = next(noise_stream)
 
-        # 2. Translate the noise value into a bounded structural jump index
+        # Translate the noise value into a bounded structural jump index
         jump = int(step * window_size)
 
-        # 3. Apply the shift and wrap around seamlessly using modulo arithmetic
+        # Apply the shift and wrap around seamlessly using modulo arithmetic
         current_idx = (current_idx + jump) % total_lines
 
-        yield verses[current_idx]
+        verse = verses[current_idx]
+        if verse in recent_verses:
+            continue
+        recent_verses.pop()
+        recent_verses.add(verse)
+        yield verse
 
 
 def print_hamlet_verses() -> None:
     # hamlet_lines = fetch_and_parse_verses(
     #     HAMLET_URL, cleaning_patterns=THEATRE_CLEANING_PATTERNS
     # )
-    hamlet_lines = load_work("hamlet")
+    hamlet_lines = load_work("hamlet", cleaning_patterns=THEATRE_CLEANING_PATTERNS)
     hamlet_stream = stream_blue_verses(hamlet_lines, window_size=15)
 
     start = time.time()
@@ -166,7 +172,7 @@ def print_moby_verses() -> None:
     # moby_lines = fetch_and_parse_verses(
     #     MOBY_DICK_URL, cleaning_patterns=NOVEL_CLEANING_PATTERNS
     # )
-    moby_lines = load_work("moby_dick")
+    moby_lines = load_work("moby_dick", cleaning_patterns=NOVEL_CLEANING_PATTERNS)
     moby_stream = stream_blue_verses(moby_lines, window_size=25)
 
     start = time.time()
@@ -183,4 +189,7 @@ def main() -> int:
 if __name__ == "__main__":
     import sys
 
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except BrokenPipeError:
+        sys.exit(0)
