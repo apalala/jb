@@ -1,0 +1,14 @@
+[project]
+name = "jb"
+version = "0.1.0"
+description = "Johannes Blues - A view into great litery works"
+readme = "README.md"
+authors = [
+    {
+        name = "Juancarlo Añez",
+        email = "apalala@gmail.com"
+    }
+]
+license = "MIT"
+requires-python = ">=3.14"
+dependencies = []

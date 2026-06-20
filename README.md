@@ -1,2 +1,3 @@
-# johannes
-A different approach to great works of literature
+# Johannes Blues
+
+A view into great literary works.
