@@ -4,29 +4,75 @@ from __future__ import annotations
 
 import random
 import re
+import time
 import urllib.request
+from pathlib import Path
 from typing import Iterator
+
+STREAM_TIME = 3.0
+
+
+WORKS_DATABASE = {
+    "hamlet": Path() / "works/pg1524.txt.bmx",
+    "mobi_dick": Path() / "works/pg2700.txt.bmx",
+}
+
 
 # Project Gutenberg Stable UTF-8 Raw Text URLs
 HAMLET_URL = "https://www.gutenberg.org/cache/epub/1524/pg1524.txt"
 MOBY_DICK_URL = "https://www.gutenberg.org/cache/epub/2701/pg2701.txt"
 
+# Agnostic Cleaning Presets
+THEATRE_CLEANING_PATTERNS = [
+    # 1. Matches leading speaker tags: e.g., "HAMLET.", "HORATIO:", "HAM_1."
+    re.compile(r"^[A-Z0-9_\s]{2,15}[\.\:]\s*"),
+    # 2. Matches stage directions inside brackets or parentheses: e.g., "[Exit Ghost]"
+    re.compile(r"[\\[\(].*?[\\]\)]"),
+]
 
-def fetch_and_parse_verses(url: str) -> list[str]:
-    """Downloads a text file from Gutenberg and parses it into cleaned lines."""
-    print(f"Fetching source text from {url}...")
+NOVEL_CLEANING_PATTERNS = [
+    # Matches typical Gutenberg chapter headers or illustration markers
+    re.compile(r"^(CHAPTER|C_H_A_P_T_E_R)\s+[IVX0-9]+.*", re.IGNORECASE),
+]
+
+
+def fetch_and_parse_verses(
+    url: str,
+    cleaning_patterns: list[re.Pattern] | None = None,
+) -> list[str]:
+    """Downloads a text file from Gutenberg, strips metadata, and applies cleaning filters."""
+    # print(f"Fetching source text from {url}...")
     with urllib.request.urlopen(url) as response:
         raw_text = response.read().decode("utf-8")
 
-    # Split into lines and strip trailing/leading whitespace tokens
+    return parse_verses(raw_text, cleaning_patterns)
+
+
+def load_work(
+    name: str,
+    cleaning_patterns: list[re.Pattern] | None = None,
+) -> list[str]:
+    from .bmx import unseal_text
+
+    path = WORKS_DATABASE[name]
+    compressed = path.read_text()
+    unsealed = unseal_text(compressed)
+    return parse_verses(unsealed, cleaning_patterns=cleaning_patterns)
+
+
+def parse_verses(
+    raw_text: str,
+    cleaning_patterns: list[re.Pattern] | None = None,
+) -> list[str]:
+    if cleaning_patterns is None:
+        cleaning_patterns = []
+
     raw_lines = [line.strip() for line in raw_text.splitlines()]
 
-    # Clean out empty lines, Project Gutenberg header indicators, or pure structural markup
-    # (A simple line filter looking for lines with alphanumeric content)
+    # Basic cleanup: remove empty lines and metadata lines
     lines = [line for line in raw_lines if line and re.search(r"\w", line)]
 
-    # Slice out metadata blocks if known, or return the active body
-    # Gutenberg files typically contain indicators like '*** START OF THE PROJECT...'
+    # Slice out Gutenberg metadata blocks (headers/footers)
     start_idx = 0
     for idx, line in enumerate(lines[:500]):
         if (
@@ -45,7 +91,22 @@ def fetch_and_parse_verses(url: str) -> list[str]:
             end_idx = len(lines) - 1000 + idx
             break
 
-    return lines[start_idx:end_idx]
+    active_body = lines[start_idx:end_idx]
+    patterns = cleaning_patterns or []
+    cleaned_verses: list[str] = []
+
+    for line in active_body:
+        # Apply the provided sequence of agnostic filters
+        for pattern in patterns:
+            line = pattern.sub("", line)
+
+        line = line.strip()
+
+        # Keep line if it still contains readable text post-cleansing
+        if line and re.search(r"[a-zA-Z]", line):
+            cleaned_verses.append(line)
+
+    return cleaned_verses
 
 
 def stream_blue_signal(beta: float = 0.65) -> Iterator[float]:
@@ -81,38 +142,45 @@ def stream_blue_verses(verses: list[str], window_size: int = 10) -> Iterator[str
         step = next(noise_stream)
 
         # 2. Translate the noise value into a bounded structural jump index
-        # Window size dictates how large an instantaneous line jump can be
         jump = int(step * window_size)
 
-        # 3. Apply the shift and bounce smoothly off borders
-        current_idx += jump
-        if current_idx < 0:
-            current_idx = abs(current_idx) % total_lines
-        elif current_idx >= total_lines:
-            current_idx = total_lines - (current_idx % total_lines) - 1
+        # 3. Apply the shift and wrap around seamlessly using modulo arithmetic
+        current_idx = (current_idx + jump) % total_lines
 
         yield verses[current_idx]
 
 
-if __name__ == "__main__":
-    # --- Run Hamlet Mode ---
-    hamlet_lines = fetch_and_parse_verses(HAMLET_URL)
-    print(f"Loaded {len(hamlet_lines)} lines into memory footprint.\n")
-
+def print_hamlet_verses() -> None:
+    # hamlet_lines = fetch_and_parse_verses(
+    #     HAMLET_URL, cleaning_patterns=THEATRE_CLEANING_PATTERNS
+    # )
+    hamlet_lines = load_work("hamlet")
     hamlet_stream = stream_blue_verses(hamlet_lines, window_size=15)
 
-    print("--- Streaming Blue Noise Hamlet Lines ---")
-    for _ in range(5):
-        print(f"> {next(hamlet_stream)}")
+    start = time.time()
+    while time.time() - start < STREAM_TIME:
+        print(next(hamlet_stream))
 
-    print("\n" + "=" * 40 + "\n")
 
-    # --- Run Moby Dick Mode ---
-    moby_lines = fetch_and_parse_verses(MOBY_DICK_URL)
-    print(f"Loaded {len(moby_lines)} lines into memory footprint.\n")
-
+def print_moby_verses() -> None:
+    # moby_lines = fetch_and_parse_verses(
+    #     MOBY_DICK_URL, cleaning_patterns=NOVEL_CLEANING_PATTERNS
+    # )
+    moby_lines = load_work("moby_dick")
     moby_stream = stream_blue_verses(moby_lines, window_size=25)
 
-    print("--- Streaming Blue Noise Moby Dick Lines ---")
-    for _ in range(5):
-        print(f"> {next(moby_stream)}")
+    start = time.time()
+    while time.time() - start < STREAM_TIME:
+        print(next(moby_stream))
+
+
+def main() -> int:
+    print_hamlet_verses()
+    # print_moby_verses()
+    return 0
+
+
+if __name__ == "__main__":
+    import sys
+
+    sys.exit(main())

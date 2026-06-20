@@ -2,6 +2,9 @@
 # SPDX-License-Identifier: BSD-4-Clause
 from __future__ import annotations
 
-from .jb import main
+if __name__ == "__main__":
+    import sys
 
-__all__ = ["main"]
+    from jb import main as jb_main
+
+    sys.exit(jb_main())

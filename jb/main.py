@@ -7,8 +7,9 @@ import sys
 
 
 def main() -> int:
-    print("Welcome to Johannes Blues")
-    return 0
+    from .jb import main as jb_main
+
+    return jb_main()
 
 
 if __name__ == "__main__":
