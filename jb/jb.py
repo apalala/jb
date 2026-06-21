@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import random
 import re
+import sys
 import time
 import urllib.request
 from pathlib import Path
-from typing import Iterator
+from typing import Any, Iterator
 
 STREAM_TIME = 5.0
 
@@ -139,21 +140,38 @@ def stream_blue_verses(verses: list[str], window_size: int = 10) -> Iterator[str
     current_idx = random.randint(0, total_lines - 1)
     recent_verses = set([""] * window_size)
     while True:
-        # Pull next raw blue noise step (-3.0 to +3.0 scale roughly)
-        step = next(noise_stream)
+        try:
+            # Pull next raw blue noise step (-3.0 to +3.0 scale roughly)
+            try:
+                step = next(noise_stream)
+            except StopIteration:
+                continue
 
-        # Translate the noise value into a bounded structural jump index
-        jump = int(step * window_size)
+            # Translate the noise value into a bounded structural jump index
+            jump = int(step * window_size)
 
-        # Apply the shift and wrap around seamlessly using modulo arithmetic
-        current_idx = (current_idx + jump) % total_lines
+            # Apply the shift and wrap around seamlessly using modulo arithmetic
+            current_idx = (current_idx + jump) % total_lines
 
-        verse = verses[current_idx]
-        if verse in recent_verses:
+            verse = verses[current_idx]
+            if verse in recent_verses:
+                continue
+            if recent_verses:
+                recent_verses.pop()
+            recent_verses.add(verse)
+            yield verse
+        except KeyboardInterrupt:
             continue
-        recent_verses.pop()
-        recent_verses.add(verse)
-        yield verse
+        except BrokenPipeError:
+            break
+
+
+def _time() -> float:
+    while True:
+        try:
+            return time.time()
+        except KeyboardInterrupt:
+            continue
 
 
 def print_hamlet_verses() -> None:
@@ -166,9 +184,16 @@ def print_hamlet_verses() -> None:
     hamlet_stream = stream_blue_verses(hamlet_lines, window_size=15)
 
     out = sys.stdout if sys.stdout.isatty() else sys.stderr
-    start = time.time()
-    while time.time() - start < STREAM_TIME:
-        print(next(hamlet_stream), file=out)
+    start = _time()
+    while _time() - start < STREAM_TIME:
+        try:
+            print(next(hamlet_stream), file=out)
+        except KeyboardInterrupt:
+            continue
+        except StopIteration:
+            hamlet_stream = stream_blue_verses(hamlet_lines, window_size=15)
+        except BrokenPipeError:
+            break
 
 
 def print_moby_verses() -> None:
@@ -180,9 +205,17 @@ def print_moby_verses() -> None:
         )
     moby_stream = stream_blue_verses(moby_lines, window_size=25)
 
-    start = time.time()
-    while time.time() - start < STREAM_TIME:
-        print(next(moby_stream))
+    out = sys.stdout if sys.stdout.isatty() else sys.stderr
+    start = _time()
+    while _time() - start < STREAM_TIME:
+        try:
+            print(next(moby_stream), file=out)
+        except KeyboardInterrupt:
+            continue
+        except StopIteration:
+            moby_stream = stream_blue_verses(moby_lines, window_size=25)
+        except BrokenPipeError:
+            break
 
 
 def main() -> int:
