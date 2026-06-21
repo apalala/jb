@@ -165,9 +165,10 @@ def print_hamlet_verses() -> None:
         )
     hamlet_stream = stream_blue_verses(hamlet_lines, window_size=15)
 
+    out = sys.stdout if sys.stdout.isatty() else sys.stderr
     start = time.time()
     while time.time() - start < STREAM_TIME:
-        print(next(hamlet_stream))
+        print(next(hamlet_stream), file=out)
 
 
 def print_moby_verses() -> None:
