@@ -3,7 +3,8 @@
 # SPDX-License-Identifier: MIT
 from __future__ import annotations
 
-if __name__ == "__main__":
+
+def main():
     import sys
 
     from jb import main as jb_main
@@ -12,3 +13,7 @@ if __name__ == "__main__":
         sys.exit(jb_main())
     except BrokenPipeError:
         sys.exit(0)
+
+
+if __name__ == "__main__":
+    main()
