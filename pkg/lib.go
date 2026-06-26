@@ -7,40 +7,37 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/shirou/gopsutil/v3/process"
 )
 
 const LogFilePath = "/tmp/cmd.log"
 
-func Jb() {
-	cmd := exec.Command("/Users/apalala/bin/jb")
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	_ = cmd.Run()
+func Jb() error {
+	return Call("~/bin/jb")
 }
 
-func ExpandHome(path string) (string, error) {
-	if path == "" {
-		return "", nil
+func ExpandHome(path string) string {
+	if !strings.HasPrefix(path, "~") {
+		return path
 	}
-	if path[0] != '~' {
-		return path, nil
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return path
 	}
-	if len(path) == 1 || path[1] == '/' {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return "", fmt.Errorf("failed to get home directory: %w", err)
-		}
-
-		return filepath.Join(home, path[1:]), nil
+	if path == "~" {
+		return "/tmp"
 	}
-	return path, nil
+	if strings.HasPrefix(path, "~/") {
+		return filepath.Join(home, path[2:])
+	}
+	return path
 }
 
 func LogCmd() {
 	timestamp := time.Now().Format("2006-01-02 15:04:05")
 
-	args := os.Args[1:]
+	args := os.Args
 	var joinedArgs string
 	if len(args) == 0 {
 		joinedArgs = "[interactive shell or no args]"
@@ -48,23 +45,44 @@ func LogCmd() {
 		joinedArgs = strings.Join(args, " ")
 	}
 
-	logEntry := fmt.Sprintf("[%s] PID %d: %s\n", timestamp, os.Getpid(), joinedArgs)
-	if f, err := os.OpenFile(LogFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644); err == nil {
-		_, _ = f.WriteString(logEntry)
-		f.Close()
+	var pid int32 = int32(os.Getpid())
+	level := 0
+	for pid != 0 {
+		proc, err := process.NewProcess(pid)
+		if err != nil {
+			break
+		}
+		name, err := proc.Name()
+		if err != nil {
+			name = "?"
+		}
+
+		cmdline, err := proc.Cmdline()
+		if err != nil || cmdline == "" {
+			cmdline = joinedArgs
+		}
+
+		logEntry := fmt.Sprintf("#%d [%s] PID %d (%s): %s\n", level, timestamp, pid, name, cmdline)
+		if f, err := os.OpenFile(LogFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644); err == nil {
+			_, _ = f.WriteString(logEntry)
+			f.Close()
+		}
+
+		parent, err := proc.Parent()
+		if err != nil {
+			break
+		}
+		pid = parent.Pid
+		level++
 	}
 
 }
 
-func main() {
-	testPath := "~/projects/safe-bin"
+func Call(cmd string, args ...string) error {
+	exe := exec.Command(ExpandHome(cmd), args...)
+	exe.Stdin = os.Stdin
+	exe.Stdout = os.Stdout
+	exe.Stderr = os.Stderr
 
-	expanded, err := ExpandHome(testPath)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
-	}
-
-	fmt.Println("Original:", testPath)
-	fmt.Println("Expanded:", expanded)
+	return exe.Run()
 }

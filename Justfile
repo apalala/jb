@@ -1,19 +1,18 @@
-# ─── Development Commands ───────────────────────────────────────────────────
+lint: ruff-lint vet
 
-# Run ruff linter (check)
+fmt: ruff-format gofmt
+
+
 ruff-lint *args="":
     uv run ruff check {{args}}
 
-# Run ruff formatter
 ruff-format *args="":
     uv run ruff format {{args}}
 
-# Run both ruff lint and format (in check mode only)
 ruff *args="":
     uv run ruff check {{args}}
     uv run ruff format --check {{args}}
 
-# Run tests with pytest
 test *args="":
     uv run pytest {{args}}
 
@@ -28,10 +27,7 @@ python3:
 
 cmd: python3 bash git
 
-# ─── Aliases ────────────────────────────────────────────────────────────────
-
-alias fmt := ruff-format
-alias lint := ruff-lint
+# === Go ===
 
 gofmt:
     gofmt -l -w -s ./cmd ./pkg

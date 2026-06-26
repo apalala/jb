@@ -8,19 +8,13 @@ import (
 	lib "github.com/apalala/jb/pkg"
 )
 
-// Hardcoded path to the real, trusted system Bash binary
-const RealBashPath = "/bin/bash"
+const RealBashPath = "/opt/local/bin/bash"
 
 func main() {
 	lib.LogCmd()
 
 	args := os.Args[1:]
-	cmd := exec.Command(RealBashPath, args...)
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	if err := cmd.Run(); err != nil {
+	if err := lib.Call(RealBashPath, args...); err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			os.Exit(exitError.ExitCode())
 		}

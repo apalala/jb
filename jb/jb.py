@@ -8,7 +8,7 @@ import sys
 import time
 import urllib.request
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Iterator
 
 STREAM_TIME = 5.0
 
@@ -43,10 +43,10 @@ def fetch_and_parse_verses(
     cleaning_patterns: list[str] | None = None,
 ) -> list[str]:
     """Downloads a text file from Gutenberg, strips metadata, and applies cleaning filters."""
-    # print(f"Fetching source text from {url}...")
     with urllib.request.urlopen(url) as response:
         raw_text = response.read().decode("utf-8")
 
+    cleaning_patterns = cleaning_patterns or []
     return parse_verses(raw_text, cleaning_patterns)
 
 
