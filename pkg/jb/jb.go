@@ -17,16 +17,25 @@ import (
 )
 
 const (
+	JBHeader = "# Johannes Blues - A view into great literary works"
+
 	StreamTime = 5 * time.Second
 
-	HamletURL   = "https://www.gutenberg.org/cache/epub/1524/pg1524.txt"
-	MobyDickURL = "https://www.gutenberg.org/cache/epub/2701/pg2701.txt"
+	GutenbergURL = "https://www.gutenberg.org/cache/epub/%[1]s/pg%[1]s.txt"
 )
 
+type Work struct {
+	ID         string
+	Type       string
+	WindowSize int
+}
+
 var (
-	WorksDatabase = map[string]string{
-		"hamlet":    filepath.FromSlash("works/pg1524.txt.bmx"),
-		"mobi_dick": filepath.FromSlash("works/pg2701.txt.bmx"),
+	WorksDatabase = []Work{
+		{ID: "pg1524", Type: "T", WindowSize: 15},
+		{ID: "pg2701", Type: "N", WindowSize: 25},
+		{ID: "pg1508", Type: "T", WindowSize: 15},
+		{ID: "pg84", Type: "N", WindowSize: 25},
 	}
 
 	TheatreCleaningPatterns = []*regexp.Regexp{
@@ -37,55 +46,76 @@ var (
 	NovelCleaningPatterns = []*regexp.Regexp{
 		regexp.MustCompile(`^(CHAPTER|C_H_A_P_T_E_R)\s+[IVX0-9]+.*`),
 	}
+
+	CleaningPatterns = map[string][]*regexp.Regexp{
+		"T": TheatreCleaningPatterns,
+		"N": NovelCleaningPatterns,
+	}
+
+	wordRE   = regexp.MustCompile(`\w`)
+	letterRE = regexp.MustCompile(`[a-zA-Z]`)
 )
 
-func FetchAndParseVerses(url string, patterns []*regexp.Regexp) ([]string, error) {
+func extractID(workID string) string {
+	return strings.TrimPrefix(workID, "pg")
+}
+
+func findWorkFile(workID string, suffix string) (string, bool) {
+	dirs := []string{"works", filepath.Join("jb", "works"), filepath.Join("..", "works")}
+	for _, dir := range dirs {
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			continue
+		}
+		for _, entry := range entries {
+			if !entry.IsDir() && strings.HasSuffix(entry.Name(), suffix) && strings.Contains(entry.Name(), workID) {
+				return filepath.Join(dir, entry.Name()), true
+			}
+		}
+	}
+	return "", false
+}
+
+func LoadWork(workID string) (string, error) {
+	gid := extractID(workID)
+
+	if path, ok := findWorkFile(workID, ".txt.bmx"); ok {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return "", fmt.Errorf("jb: read %s: %w", path, err)
+		}
+		unsealed, err := bmx.UnsealText(string(data))
+		if err != nil {
+			return "", fmt.Errorf("jb: unseal %s: %w", path, err)
+		}
+		return unsealed, nil
+	}
+
+	if path, ok := findWorkFile(workID, ".txt"); ok {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return "", fmt.Errorf("jb: read %s: %w", path, err)
+		}
+		return string(data), nil
+	}
+
+	url := fmt.Sprintf(GutenbergURL, gid)
 	resp, err := http.Get(url)
 	if err != nil {
-		return nil, fmt.Errorf("jb: fetch %s: %w", url, err)
+		return "", fmt.Errorf("jb: fetch %s: %w", url, err)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("jb: read %s: %w", url, err)
+		return "", fmt.Errorf("jb: read %s: %w", url, err)
 	}
-
-	return ParseVerses(string(body), patterns), nil
+	return string(body), nil
 }
 
-func LoadWork(name string, patterns []*regexp.Regexp) ([]string, error) {
-	rel, ok := WorksDatabase[name]
-	if !ok {
-		return nil, fmt.Errorf("jb: unknown work %q", name)
-	}
-
-	pathsToTry := []string{
-		rel,
-		filepath.Join("jb", rel),
-		filepath.Join("..", rel),
-	}
-
-	var data []byte
-	var errs []string
-	for _, p := range pathsToTry {
-		d, e := os.ReadFile(p)
-		if e == nil {
-			data = d
-			break
-		}
-		errs = append(errs, fmt.Sprintf("%s: %v", p, e))
-	}
-	if data == nil {
-		return nil, fmt.Errorf("jb: load work %q: %s", name, strings.Join(errs, "; "))
-	}
-
-	unsealed, err := bmx.UnsealText(string(data))
-	if err != nil {
-		return nil, fmt.Errorf("jb: unseal %s: %w", name, err)
-	}
-
-	return ParseVerses(unsealed, patterns), nil
+func CleanWork(workType string, text string) string {
+	pats := CleaningPatterns[workType]
+	return strings.Join(ParseVerses(text, pats), "\n")
 }
 
 func ParseVerses(rawText string, patterns []*regexp.Regexp) []string {
@@ -93,7 +123,7 @@ func ParseVerses(rawText string, patterns []*regexp.Regexp) []string {
 	for line := range strings.Lines(rawText) {
 		line = strings.TrimSuffix(line, "\n")
 		line = strings.TrimSpace(line)
-		if line != "" {
+		if line != "" && wordRE.MatchString(line) {
 			lines = append(lines, line)
 		}
 	}
@@ -117,7 +147,7 @@ func ParseVerses(rawText string, patterns []*regexp.Regexp) []string {
 		}
 		upper := strings.ToUpper(line)
 		if strings.Contains(upper, "END OF THE PROJECT") || strings.Contains(upper, "END OF THIS PROJECT") {
-			endIdx = len(lines) - (len(lines) - i)
+			endIdx = i
 			break
 		}
 	}
@@ -131,7 +161,7 @@ func ParseVerses(rawText string, patterns []*regexp.Regexp) []string {
 			result = pat.ReplaceAllString(result, "")
 		}
 		result = strings.TrimSpace(result)
-		if result != "" && regexp.MustCompile(`[a-zA-Z]`).MatchString(result) {
+		if result != "" && letterRE.MatchString(result) {
 			cleaned = append(cleaned, result)
 		}
 	}
@@ -187,43 +217,30 @@ func StreamBlueVerses(verses []string, windowSize int) iter.Seq[string] {
 	}
 }
 
-func PrintHamletVerses(dur time.Duration) {
-	lines, err := LoadWork("hamlet", TheatreCleaningPatterns)
-	if err != nil {
-		var fetchErr error
-		lines, fetchErr = FetchAndParseVerses(HamletURL, TheatreCleaningPatterns)
-		if fetchErr != nil {
-			fmt.Fprintf(os.Stderr, "jb: load hamlet: %v (fetch: %v)\n", err, fetchErr)
-			return
+func PrintWork(text string, windowSize int) {
+	verses := strings.Split(text, "\n")
+	var nonEmpty []string
+	for _, v := range verses {
+		if v != "" {
+			nonEmpty = append(nonEmpty, v)
 		}
 	}
+	if len(nonEmpty) == 0 {
+		return
+	}
 
-	deadline := time.Now().Add(dur)
-	for verse := range StreamBlueVerses(lines, 15) {
+	out := os.Stdout
+	if stat, _ := os.Stdout.Stat(); stat.Mode()&os.ModeCharDevice == 0 {
+		out = os.Stderr
+	}
+
+	fmt.Println(JBHeader)
+	deadline := time.Now().Add(StreamTime)
+	for verse := range StreamBlueVerses(nonEmpty, windowSize) {
 		if time.Now().After(deadline) {
 			break
 		}
-		fmt.Fprintln(os.Stdout, verse)
-	}
-}
-
-func PrintMobyDickVerses(dur time.Duration) {
-	lines, err := LoadWork("mobi_dick", NovelCleaningPatterns)
-	if err != nil {
-		var fetchErr error
-		lines, fetchErr = FetchAndParseVerses(MobyDickURL, NovelCleaningPatterns)
-		if fetchErr != nil {
-			fmt.Fprintf(os.Stderr, "jb: load moby_dick: %v (fetch: %v)\n", err, fetchErr)
-			return
-		}
-	}
-
-	deadline := time.Now().Add(dur)
-	for verse := range StreamBlueVerses(lines, 25) {
-		if time.Now().After(deadline) {
-			break
-		}
-		fmt.Fprintln(os.Stdout, verse)
+		fmt.Fprintln(out, verse)
 	}
 }
 
@@ -236,6 +253,13 @@ func mod(a, n int) int {
 }
 
 func Main() int {
-	PrintHamletVerses(StreamTime)
+	work := WorksDatabase[rand.IntN(len(WorksDatabase))]
+	raw, err := LoadWork(work.ID)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "jb: %v\n", err)
+		return 1
+	}
+	text := CleanWork(work.Type, raw)
+	PrintWork(text, work.WindowSize)
 	return 0
 }
