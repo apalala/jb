@@ -1,6 +1,6 @@
 [project]
 name = "jb"
-version = "0.1.0"
+version = "0.2.0"
 description = "Johannes Blues - A view into great litery works"
 readme = "README.md"
 authors = [

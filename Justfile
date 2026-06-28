@@ -13,8 +13,11 @@ ruff *args="":
     uv run ruff check {{args}}
     uv run ruff format --check {{args}}
 
-test *args="":
+pytest *args="":
     uv run pytest {{args}}
+
+test:
+    uv run pytest jb
 
 git:
     go build -o bin/git cmd/git/safe_git.go
@@ -28,7 +31,13 @@ python3:
 head:
     go build -o bin/head cmd/head/safe_head.go
 
-cmd: python3 bash git head
+bmx:
+    go build -o bin/bmx cmd/bmx/bmx.go
+
+jb:
+    go build -o bin/jb cmd/jb/jb.go
+
+cmd: python3 bash git head bmx jb
 
 # === Go ===
 
@@ -43,6 +52,9 @@ deps:
 
 vendor: tidy
     go mod vendor -o _vendor
+
+gotest *args="":
+    go test ./pkg/... {{args}}
 
 vet:
     go vet -structtag=false ./...

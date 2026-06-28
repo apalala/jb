@@ -180,6 +180,7 @@ def print_hamlet_verses() -> None:
     hamlet_stream = stream_blue_verses(hamlet_lines, window_size=15)
 
     out = sys.stdout if sys.stdout.isatty() else sys.stderr
+    print(JB_HEADER)
     start = _time()
     while _time() - start < STREAM_TIME:
         try:
@@ -202,6 +203,7 @@ def print_moby_verses() -> None:
     moby_stream = stream_blue_verses(moby_lines, window_size=25)
 
     out = sys.stdout if sys.stdout.isatty() else sys.stderr
+    print(JB_HEADER)
     start = _time()
     while _time() - start < STREAM_TIME:
         try:

@@ -6,7 +6,12 @@ replace github.com/apalala/jb => .
 
 replace github.com/apalala/jb/pkg => ./pkg
 
-require github.com/shirou/gopsutil/v3 v3.24.5
+require (
+	github.com/alecthomas/kong v1.15.0
+	github.com/shirou/gopsutil/v3 v3.24.5
+	github.com/tortxof/z85 v0.1.0
+	gonum.org/v1/gonum v0.17.0
+)
 
 require (
 	github.com/go-ole/go-ole v1.2.6 // indirect
