@@ -10,6 +10,13 @@ license = "MIT"
 requires-python = ">=3.14"
 dependencies = []
 
+[tool.setuptools]
+packages = ["jb"]
+include-package-data = true
+
+[tool.setuptools.package-data]
+"jb.works" = ["jb/works/*"]
+
 [dependency-groups]
 dev = [
     "pytest>=9.1.1",
