@@ -120,9 +120,9 @@ func testFile(t *testing.T, path, expected string) {
 }
 
 func TestDecodeHamlet(t *testing.T) {
-	testFile(t, "works/Hamlet-pg1524.txt.bmx", "THE TRAGEDY OF HAMLET")
+	testFile(t, "jb/works/pg001524-T15-Hamlet.txt.bmx", "THE TRAGEDY OF HAMLET")
 }
 
 func TestDecodeMobyDick(t *testing.T) {
-	testFile(t, "works/Moby_Dick.txt_pg2701.bmx", "MOBY-DICK")
+	testFile(t, "jb/works/pg002701-N25-Moby_Dick.txt.bmx", "MOBY-DICK")
 }

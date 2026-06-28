@@ -2,42 +2,59 @@ package jb
 
 import (
 	"fmt"
-	"io"
 	"iter"
 	"math/rand/v2"
-	"net/http"
 	"os"
-	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/apalala/jb"
 	"github.com/apalala/jb/pkg/blue"
 	"github.com/apalala/jb/pkg/bmx"
 )
 
 const (
-	JBHeader = "# Johannes Blues - A view into great literary works"
-
+	JBHeader   = "# Johannes Blues - A view into great literary works"
 	StreamTime = 5 * time.Second
-
-	GutenbergURL = "https://www.gutenberg.org/cache/epub/%[1]s/pg%[1]s.txt"
 )
 
 type Work struct {
-	ID         string
-	Type       string
-	WindowSize int
+	ID          string
+	Type        string
+	WindowSize  int
+	DisplayName string
+	Path        string
+}
+
+var workFilenameRE = regexp.MustCompile(`^pg(\d{6})-([A-Z])(\d{2})-(.+)\.(txt(?:\.bmx)?)$`)
+
+var WorksDatabase []Work
+
+func init() {
+	entries, err := jb.WorksFS.ReadDir("jb/works")
+	if err != nil {
+		panic(fmt.Sprintf("jb: read embedded works/: %v", err))
+	}
+	for _, entry := range entries {
+		name := entry.Name()
+		m := workFilenameRE.FindStringSubmatch(name)
+		if m == nil {
+			continue
+		}
+		ws, _ := strconv.Atoi(m[3])
+		WorksDatabase = append(WorksDatabase, Work{
+			ID:          m[1],
+			Type:        m[2],
+			WindowSize:  ws,
+			DisplayName: m[4],
+			Path:        "jb/works/" + name,
+		})
+	}
 }
 
 var (
-	WorksDatabase = []Work{
-		{ID: "pg1524", Type: "T", WindowSize: 15},
-		{ID: "pg2701", Type: "N", WindowSize: 25},
-		{ID: "pg1508", Type: "T", WindowSize: 15},
-		{ID: "pg84", Type: "N", WindowSize: 25},
-	}
-
 	TheatreCleaningPatterns = []*regexp.Regexp{
 		regexp.MustCompile(`(?m)^[A-Z0-9_\s]{2,15}[.:]\s*`),
 		regexp.MustCompile(`(?m)[\[(].*?[\])]`),
@@ -56,61 +73,15 @@ var (
 	letterRE = regexp.MustCompile(`[a-zA-Z]`)
 )
 
-func extractID(workID string) string {
-	return strings.TrimPrefix(workID, "pg")
-}
-
-func findWorkFile(workID string, suffix string) (string, bool) {
-	dirs := []string{"works", filepath.Join("jb", "works"), filepath.Join("..", "works")}
-	for _, dir := range dirs {
-		entries, err := os.ReadDir(dir)
-		if err != nil {
-			continue
-		}
-		for _, entry := range entries {
-			if !entry.IsDir() && strings.HasSuffix(entry.Name(), suffix) && strings.Contains(entry.Name(), workID) {
-				return filepath.Join(dir, entry.Name()), true
-			}
-		}
-	}
-	return "", false
-}
-
-func LoadWork(workID string) (string, error) {
-	gid := extractID(workID)
-
-	if path, ok := findWorkFile(workID, ".txt.bmx"); ok {
-		data, err := os.ReadFile(path)
-		if err != nil {
-			return "", fmt.Errorf("jb: read %s: %w", path, err)
-		}
-		unsealed, err := bmx.UnsealText(string(data))
-		if err != nil {
-			return "", fmt.Errorf("jb: unseal %s: %w", path, err)
-		}
-		return unsealed, nil
-	}
-
-	if path, ok := findWorkFile(workID, ".txt"); ok {
-		data, err := os.ReadFile(path)
-		if err != nil {
-			return "", fmt.Errorf("jb: read %s: %w", path, err)
-		}
-		return string(data), nil
-	}
-
-	url := fmt.Sprintf(GutenbergURL, gid)
-	resp, err := http.Get(url)
+func LoadWork(work Work) (string, error) {
+	data, err := jb.WorksFS.ReadFile(work.Path)
 	if err != nil {
-		return "", fmt.Errorf("jb: fetch %s: %w", url, err)
+		return "", fmt.Errorf("jb: read %s: %w", work.Path, err)
 	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", fmt.Errorf("jb: read %s: %w", url, err)
+	if strings.HasSuffix(work.Path, ".bmx") {
+		return bmx.UnsealText(string(data))
 	}
-	return string(body), nil
+	return string(data), nil
 }
 
 func CleanWork(workType string, text string) string {
@@ -254,7 +225,7 @@ func mod(a, n int) int {
 
 func Main() int {
 	work := WorksDatabase[rand.IntN(len(WorksDatabase))]
-	raw, err := LoadWork(work.ID)
+	raw, err := LoadWork(work)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "jb: %v\n", err)
 		return 1

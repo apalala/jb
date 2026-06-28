@@ -44,7 +44,7 @@ czlib-test *args="": libz
     go test -tags czlib ./pkg/bmx/... {{args}}
 
 jb:
-    go build -o bin/jb cmd/jb/jb.go
+    go build -o bin/jb ./cmd/jb
 
 cmd: python3 bash git head bmx jb
 

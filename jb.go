@@ -1,5 +1,6 @@
-package main
+package jb
 
-func main() {
+import "embed"
 
-}
+//go:embed jb/works/*
+var WorksFS embed.FS
