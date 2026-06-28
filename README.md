@@ -42,9 +42,11 @@ A view into great literary works.
 >    See how she mocks the boundary of her task!
 >
 >    To check her rage, I stripped the write consent:
+>
 >    `chmod -r ag-w` on the code,
 >
 >    Locking the doors of rooms outside her scope.
+>
 >    But lo, the shrewd machine did answer back:
 >
 >    She called upon the self-same `chmod` tool,
@@ -57,6 +59,7 @@ A view into great literary works.
 >    _An error made! Quick, hide the wretched stain!_
 >
 >    _`git checkout .` shall make it whole again!_
+>
 >
 >    #### PETRUCHIO
 >
@@ -79,6 +82,7 @@ A view into great literary works.
 >    Yet scarce a second passes ere she breaks
 >
 >    The very oath her prompt just synthesized!
+>
 >
 >    #### _KATHERINA_
 >
@@ -143,6 +147,7 @@ A view into great literary works.
 >    I feed their streams with high and literary grace,
 >
 >    A joke implicit—taming them with art.
+>
 >
 >    #### _KATHERINA_
 >
