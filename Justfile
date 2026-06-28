@@ -34,6 +34,15 @@ head:
 bmx:
     go build -o bin/bmx cmd/bmx/bmx.go
 
+libz:
+    test -f lib/zlib/libz.a || (cd lib/zlib && ./configure && make)
+
+czlib-bmx: libz
+    go build -tags czlib -o bin/bmx-czlib cmd/bmx/bmx.go
+
+czlib-test *args="": libz
+    go test -tags czlib ./pkg/bmx/... {{args}}
+
 jb:
     go build -o bin/jb cmd/jb/jb.go
 

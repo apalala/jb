@@ -1,8 +1,6 @@
 package bmx
 
 import (
-	"bytes"
-	"compress/zlib"
 	"fmt"
 	"hash/crc32"
 	"strings"
@@ -19,19 +17,12 @@ func SealText(text string, width int) (string, error) {
 	raw := []byte(text)
 	crc := crc32.ChecksumIEEE(raw)
 
-	var buf bytes.Buffer
-	w, err := zlib.NewWriterLevel(&buf, 9)
+	compressed, err := ZlibCompress(raw)
 	if err != nil {
-		return "", fmt.Errorf("bmx: create zlib writer: %w", err)
-	}
-	if _, err := w.Write(raw); err != nil {
-		return "", fmt.Errorf("bmx: compress: %w", err)
-	}
-	if err := w.Close(); err != nil {
-		return "", fmt.Errorf("bmx: close zlib: %w", err)
+		return "", err
 	}
 
-	encoded := z85.Encode(buf.Bytes())
+	encoded := z85.Encode(compressed)
 
 	var sb strings.Builder
 	sb.WriteString(Header)
@@ -52,31 +43,35 @@ func SealText(text string, width int) (string, error) {
 }
 
 func UnsealText(envelope string) (string, error) {
-	lines := splitLines(envelope)
-
-	if len(lines) == 0 || lines[0] != Header {
+	newlineIdx := strings.IndexByte(envelope, '\n')
+	if newlineIdx < 0 {
 		return "", fmt.Errorf("Invalid matrix: Missing or corrupted header marker.")
 	}
 
-	last := lines[len(lines)-1]
-	if !strings.HasPrefix(last, "--- END OF THE BARD'S MATRIX") {
+	if envelope[:newlineIdx] != Header {
+		return "", fmt.Errorf("Invalid matrix: Missing or corrupted header marker.")
+	}
+
+	rest := envelope[newlineIdx+1:]
+
+	const footerPrefix = "--- END OF THE BARD'S MATRIX"
+	footerIdx := strings.LastIndex(rest, footerPrefix)
+	if footerIdx < 0 {
 		return "", fmt.Errorf("Invalid matrix: Missing or cut-off footer marker.")
 	}
 
-	footerLine := lines[len(lines)-1]
+	payloadStr := rest[:footerIdx]
+	payloadStr = strings.ReplaceAll(payloadStr, "\n", "")
+
+	footerLine := rest[footerIdx:]
 	expectedCRC, err := extractCRC(footerLine)
 	if err != nil {
 		return "", fmt.Errorf("Corrupted matrix: Validation signature format is unreadable.")
 	}
 
-	var payload strings.Builder
-	for _, line := range lines[1 : len(lines)-1] {
-		payload.WriteString(line)
-	}
+	decoded := z85.Decode([]byte(payloadStr))
 
-	decoded := z85.Decode([]byte(payload.String()))
-
-	uncompressed, err := zlibDecode(decoded)
+	uncompressed, err := ZlibDecompress(decoded)
 	if err != nil {
 		return "", fmt.Errorf("Corrupted matrix: %s", err)
 	}
@@ -90,19 +85,6 @@ func UnsealText(envelope string) (string, error) {
 	}
 
 	return string(uncompressed), nil
-}
-
-func splitLines(s string) []string {
-	var lines []string
-	s = strings.ReplaceAll(s, "\r\n", "\n")
-	s = strings.ReplaceAll(s, "\r", "\n")
-	for _, line := range strings.Split(s, "\n") {
-		line = strings.TrimSpace(line)
-		if line != "" {
-			lines = append(lines, line)
-		}
-	}
-	return lines
 }
 
 func extractCRC(line string) (uint32, error) {
@@ -121,16 +103,4 @@ func extractCRC(line string) (uint32, error) {
 	return val, nil
 }
 
-func zlibDecode(data []byte) ([]byte, error) {
-	r, err := zlib.NewReader(bytes.NewReader(data))
-	if err != nil {
-		return nil, err
-	}
-	defer r.Close()
 
-	var result bytes.Buffer
-	if _, err := result.ReadFrom(r); err != nil {
-		return nil, err
-	}
-	return result.Bytes(), nil
-}

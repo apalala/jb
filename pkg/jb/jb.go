@@ -89,10 +89,9 @@ func LoadWork(name string, patterns []*regexp.Regexp) ([]string, error) {
 }
 
 func ParseVerses(rawText string, patterns []*regexp.Regexp) []string {
-	rawLines := strings.Split(rawText, "\n")
-
 	var lines []string
-	for _, line := range rawLines {
+	for line := range strings.Lines(rawText) {
+		line = strings.TrimSuffix(line, "\n")
 		line = strings.TrimSpace(line)
 		if line != "" {
 			lines = append(lines, line)
