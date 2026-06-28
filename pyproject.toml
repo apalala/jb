@@ -22,3 +22,10 @@ dev = [
     "pytest>=9.1.1",
     "ruff>=0.15.18",
 ]
+
+[tool.pytest.ini_options]
+log_cli = true
+log_cli_level = "ERROR"
+addopts = "-q --ignore=.venv -p no:logging"
+testpaths = ["tests"]
+norecursedirs = ["*.egg", ".git", ".venv", "build", "dist"]

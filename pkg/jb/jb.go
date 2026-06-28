@@ -188,7 +188,7 @@ func StreamBlueVerses(verses []string, windowSize int) iter.Seq[string] {
 	}
 }
 
-func PrintWork(text string, windowSize int) {
+func PrintWork(text string, windowSize int, streamTime ...time.Duration) {
 	verses := strings.Split(text, "\n")
 	var nonEmpty []string
 	for _, v := range verses {
@@ -205,8 +205,13 @@ func PrintWork(text string, windowSize int) {
 		out = os.Stderr
 	}
 
+	dur := StreamTime
+	if len(streamTime) > 0 {
+		dur = streamTime[0]
+	}
+
 	fmt.Println(JBHeader)
-	deadline := time.Now().Add(StreamTime)
+	deadline := time.Now().Add(dur)
 	for verse := range StreamBlueVerses(nonEmpty, windowSize) {
 		if time.Now().After(deadline) {
 			break

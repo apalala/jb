@@ -16,8 +16,8 @@ ruff *args="":
 pytest *args="":
     uv run pytest {{args}}
 
-test:
-    uv run pytest jb
+test *args="":
+    uv run pytest {{args}}
 
 git:
     go build -o bin/git cmd/git/safe_git.go

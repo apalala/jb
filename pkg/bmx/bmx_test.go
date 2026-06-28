@@ -83,6 +83,65 @@ func TestEmptyEnvelope(t *testing.T) {
 	}
 }
 
+func TestUnicodeRoundtrip(t *testing.T) {
+	input := "Hello, 世界! ñoño — émoji 🎉 test ✓"
+	sealed, err := SealText(input, 80)
+	if err != nil {
+		t.Fatalf("SealText: %v", err)
+	}
+	result, err := UnsealText(sealed)
+	if err != nil {
+		t.Fatalf("UnsealText: %v", err)
+	}
+	if result != input {
+		t.Fatalf("roundtrip mismatch:\nwant: %q\ngot:  %q", input, result)
+	}
+}
+
+func TestEmptyStringRoundtrip(t *testing.T) {
+	sealed, err := SealText("", 80)
+	if err != nil {
+		t.Fatalf("SealText: %v", err)
+	}
+	result, err := UnsealText(sealed)
+	if err != nil {
+		t.Fatalf("UnsealText: %v", err)
+	}
+	if result != "" {
+		t.Fatalf("expected empty string, got: %q", result)
+	}
+}
+
+func TestMultiLineRoundtrip(t *testing.T) {
+	input := "Line one\nLine two\n\nLine four after blank\n  indented  "
+	sealed, err := SealText(input, 80)
+	if err != nil {
+		t.Fatalf("SealText: %v", err)
+	}
+	result, err := UnsealText(sealed)
+	if err != nil {
+		t.Fatalf("UnsealText: %v", err)
+	}
+	if result != input {
+		t.Fatalf("roundtrip mismatch:\nwant: %q\ngot:  %q", input, result)
+	}
+}
+
+func TestTrailingWhitespaceInEnvelope(t *testing.T) {
+	input := "Trailing whitespace test."
+	sealed, err := SealText(input, 80)
+	if err != nil {
+		t.Fatalf("SealText: %v", err)
+	}
+	result, err := UnsealText(sealed + "\n\n\n")
+	if err != nil {
+		t.Fatalf("UnsealText with trailing newlines: %v", err)
+	}
+	if result != input {
+		t.Fatalf("mismatch:\nwant: %q\ngot:  %q", input, result)
+	}
+}
+
 func projectRoot() string {
 	dir, err := os.Getwd()
 	if err != nil {

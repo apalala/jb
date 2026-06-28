@@ -8,14 +8,12 @@ import sys
 import time
 import urllib.request
 from dataclasses import dataclass
-from pathlib import Path
+from importlib.resources import files
 from typing import Iterator
 
 JB_HEADER = "# Johannes Blues - A view into great literary works"
 
 STREAM_TIME = 5.0
-
-ROOT_PATH = Path(__file__).parent
 
 
 @dataclass
@@ -49,13 +47,10 @@ CLEANING_PATTERNS = {
 GUTENBERG_URL = "https://www.gutenberg.org/cache/epub/{gid}/pg{gid}.txt"
 
 
-def _find_work_file(gid: str, suffix: str) -> Path | None:
-    for dir in (ROOT_PATH / "works", ROOT_PATH.parent / "works"):
-        if not dir.is_dir():
-            continue
-        for f in dir.iterdir():
-            if f.name.endswith(suffix) and gid in f.name:
-                return f
+def _find_work_file(gid: str, suffix: str):
+    for f in (files("jb") / "works").iterdir():
+        if f.name.endswith(suffix) and gid in f.name:
+            return f
     return None
 
 
@@ -65,14 +60,15 @@ def _extract_id(work_id: str) -> str:
 
 def load_work(work_id: str) -> str:
     gid = _extract_id(work_id)
+    padded = f"pg{gid.zfill(6)}"
 
-    bmx = _find_work_file(work_id, ".txt.bmx")
+    bmx = _find_work_file(padded, ".txt.bmx")
     if bmx is not None:
         from .bmx import unseal_text
 
         return unseal_text(bmx.read_text())
 
-    txt = _find_work_file(work_id, ".txt")
+    txt = _find_work_file(padded, ".txt")
     if txt is not None:
         return txt.read_text(encoding="utf-8")
 
@@ -93,10 +89,11 @@ def clean_work(work_type: str, text: str) -> str:
             break
 
     end_idx = len(lines)
-    for idx, line in enumerate(lines[-1000:]):
+    start = max(0, len(lines) - 1000)
+    for idx, line in enumerate(lines[start:], start=start):
         upper = line.upper()
         if "END OF THE PROJECT" in upper or "END OF THIS PROJECT" in upper:
-            end_idx = len(lines) - 1000 + idx
+            end_idx = idx
             break
 
     body = lines[start_idx:end_idx]
@@ -114,7 +111,7 @@ def clean_work(work_type: str, text: str) -> str:
     return "\n".join(cleaned)
 
 
-def print_work(text: str, window_size: int = 15) -> None:
+def print_work(text: str, window_size: int = 15, stream_time: float | None = None) -> None:
     verses = [line for line in text.split("\n") if line]
     if not verses:
         return
@@ -123,7 +120,8 @@ def print_work(text: str, window_size: int = 15) -> None:
     out = sys.stdout if sys.stdout.isatty() else sys.stderr
     print(JB_HEADER)
     start = _time()
-    while _time() - start < STREAM_TIME:
+    deadline = stream_time if stream_time is not None else STREAM_TIME
+    while _time() - start < deadline:
         try:
             print(next(stream), file=out)
         except KeyboardInterrupt:
@@ -151,12 +149,19 @@ def stream_blue_verses(verses: list[str], window_size: int = 10) -> Iterator[str
         raise ValueError("The text source array cannot be empty.")
 
     total_lines = len(verses)
+    if total_lines == 1:
+        while True:
+            yield verses[0]
+
+    window = min(window_size, total_lines - 1)
+    if window < 1:
+        window = 1
     noise_stream = stream_blue_signal()
     current_idx = random.randint(0, total_lines - 1)
     recent_verses: set[str] = set()
     recent_order: list[str] = []
 
-    for _ in range(window_size):
+    for _ in range(window):
         recent_verses.add("")
         recent_order.append("")
 
