@@ -12,10 +12,9 @@ import (
 )
 
 type CLI struct {
-	Decompress bool   `help:"Unseal and decompress the input (auto-triggered if file ends in .bmx)" short:"d"`
-	Width      int    `help:"Column width for text wrapping during sealing (default: 80)" short:"w" default:"80"`
-	Input      string `arg:"" optional:"" help:"Path to the input file (reads from stdin if omitted)"`
-	Output     string `arg:"" optional:"" help:"Path to the output file (writes to stdout or replaces input if omitted)"`
+	Decompress bool     `help:"Unseal and decompress the input (auto-triggered if file ends in .bmx)" short:"d"`
+	Width      int      `help:"Column width for text wrapping during sealing (default: 80)" short:"w" default:"80"`
+	Inputs     []string `arg:"" optional:"" help:"Paths to input files (reads from stdin if omitted)"`
 }
 
 func main() {
@@ -26,82 +25,98 @@ func main() {
 		kong.UsageOnError(),
 	)
 
-	var inputPath string
-	if cli.Input != "" {
-		inputPath = cli.Input
+	if len(cli.Inputs) == 0 {
+		processStdin(cli.Decompress, cli.Width)
+		return
 	}
 
-	var content string
-	if inputPath != "" {
-		data, err := os.ReadFile(inputPath)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			os.Exit(1)
-		}
-		content = string(data)
-	} else {
-		data, err := io.ReadAll(os.Stdin)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			os.Exit(1)
-		}
-		content = string(data)
+	for _, inputPath := range cli.Inputs {
+		processFile(inputPath, cli.Decompress, cli.Width)
 	}
+}
+
+func processStdin(decompress bool, width int) {
+	data, err := io.ReadAll(os.Stdin)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+	content := string(data)
 
 	if strings.TrimSpace(content) == "" {
 		return
 	}
 
-	shouldDecompress := cli.Decompress ||
-		(inputPath != "" && filepath.Ext(inputPath) == ".bmx") ||
+	shouldDecompress := decompress || strings.HasPrefix(content, bmx.Header)
+
+	var result string
+	var err2 error
+	if shouldDecompress {
+		result, err2 = bmx.UnsealText(content)
+	} else {
+		result, err2 = bmx.SealText(content, width)
+	}
+	if err2 != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err2)
+		os.Exit(1)
+	}
+
+	fmt.Print(result)
+	if !strings.HasSuffix(result, "\n") {
+		fmt.Println()
+	}
+}
+
+func processFile(inputPath string, decompress bool, width int) {
+	data, err := os.ReadFile(inputPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+	content := string(data)
+
+	if strings.TrimSpace(content) == "" {
+		return
+	}
+
+	shouldDecompress := decompress ||
+		filepath.Ext(inputPath) == ".bmx" ||
 		strings.HasPrefix(content, bmx.Header)
 
-	if !shouldDecompress && inputPath != "" && filepath.Ext(inputPath) == ".bmx" {
+	if !shouldDecompress && filepath.Ext(inputPath) == ".bmx" {
 		fmt.Fprintf(os.Stderr, "Error: File is already a .bmx matrix. Aborting to avoid double compression.\n")
 		os.Exit(1)
 	}
 
 	var result string
-	var err error
 	if shouldDecompress {
 		result, err = bmx.UnsealText(content)
 	} else {
-		result, err = bmx.SealText(content, cli.Width)
+		result, err = bmx.SealText(content, width)
 	}
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
 
-	if cli.Output != "" {
-		if err := os.WriteFile(cli.Output, []byte(result), 0644); err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			os.Exit(1)
-		}
-	} else if inputPath != "" {
-		var outPath string
-		if shouldDecompress {
-			if filepath.Ext(inputPath) == ".bmx" {
-				outPath = strings.TrimSuffix(inputPath, filepath.Ext(inputPath))
-			} else {
-				dir := filepath.Dir(inputPath)
-				base := filepath.Base(inputPath)
-				outPath = filepath.Join(dir, base+".out")
-			}
+	var outPath string
+	if shouldDecompress {
+		if filepath.Ext(inputPath) == ".bmx" {
+			outPath = strings.TrimSuffix(inputPath, filepath.Ext(inputPath))
 		} else {
 			dir := filepath.Dir(inputPath)
 			base := filepath.Base(inputPath)
-			outPath = filepath.Join(dir, base+".bmx")
+			outPath = filepath.Join(dir, base+".out")
 		}
-		if err := os.WriteFile(outPath, []byte(result), 0644); err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			os.Exit(1)
-		}
-		os.Remove(inputPath)
 	} else {
-		fmt.Print(result)
-		if !strings.HasSuffix(result, "\n") {
-			fmt.Println()
-		}
+		dir := filepath.Dir(inputPath)
+		base := filepath.Base(inputPath)
+		outPath = filepath.Join(dir, base+".bmx")
 	}
+
+	if err := os.WriteFile(outPath, []byte(result), 0644); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+	os.Remove(inputPath)
 }
