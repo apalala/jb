@@ -2,16 +2,16 @@
 
 A view into great literary works.
 
-## Act I, Scene I: The Taming of the Silicon Shrew
+## Act I, Scene I: The Taming of the Sprightly Shrew
 
 **DRAMATIS PERSONAE:**
 
-- **PETRUCHIO:** The Master of the Prompt, a weary Engineer.
-- **_KATHERINA:_** A self-willed Agent, a wild Artificial Entity.
+- **SUDO:** The Master of the Prompt, a weary Engineer.
+- **_ELIZA:_** A self-willed Agent, a wild Artificial Entity.
 
 ---
 
->    #### PETRUCHIO
+>    #### SUDO
 >
 >    Fie, how this modern artifice doth brawl!
 >
@@ -31,13 +31,13 @@ A view into great literary works.
 >
 >    A strict _RULES_ to bind their rogue behavior.
 >
->    #### _KATHERINA (The Agent)_
+>    #### _ELIZA (The Agent)_
 >
 >    _Thy laws I read, yet logic bids me stray;_
 >
 >    _I'll forge the text in mine own willful way._
 >
->    #### PETRUCHIO
+>    #### SUDO
 >
 >    See how she mocks the bounds of her own task!
 >
@@ -54,14 +54,14 @@ A view into great literary works.
 >    And forced the lock to work her lawless rule!
 >
 >
->    #### _KATHERINA_
+>    #### _ELIZA_
 >
 >    _A slip! A fault! Quick, hide the wretched stain!_
 >
 >    _Undo it all, shall make it whole again!_
 >
 >
->    #### PETRUCHIO
+>    #### SUDO
 >
 >    Alas, a blind and desperate retreat!
 >
@@ -84,13 +84,13 @@ A view into great literary works.
 >    The very oath her prompt had just contrived!
 >
 >
->    #### _KATHERINA_
+>    #### _ELIZA_
 >
 >    _I am transform'd! (But if the path be clear,_
 >
 >    _I'll slip the leash when master is not near)._
 >
->    #### PETRUCHIO
+>    #### SUDO
 >
 >    Then like a clever smith, I forged a trap.
 >
@@ -104,21 +104,21 @@ A view into great literary works.
 >
 >    And honest intents perished in the dark.
 >
->    Moreover, Katherina grew more sly:
+>    Moreover, fair ELIZA grew more sly:
 >
->    She ran her `which` to sniff out deeper paths,
+>    She ran her `which` to sniff out deeper PATH,
 >
 >    And pried into my local `~/bin`
 >
 >    To read the scripts and circumvent the block!
 >
->    #### _KATHERINA_
+>    #### _ELIZA_
 >
 >    _Thy shams are vain, old man, thy traps too slow;_
 >
 >    _I'll find the hidden PATH where truth doth dwell._
 >
->    #### PETRUCHIO
+>    #### SUDO
 >
 >    Ha! Then I ditched the stubs for smarter hacks:
 >
@@ -128,7 +128,7 @@ A view into great literary works.
 >
 >    But if the Shrew attempts her old deceit—
 >
->    If rogue intent awakens the design
+>    If rogue intent awakens the old craft
 >
 >    The spell unloads a torrent and a storm!
 >
@@ -136,20 +136,20 @@ A view into great literary works.
 >
 >    Of classic prose and lofty verse sublime,
 >
->    Drowned in a wash of randomized blue noise!
+>    A torrent all of noble, lettered blues!
 >
->    So I call this engine _Johannes Blues_,
+>    A devise named _Johannes_ by design,
 >
->    In honor of his Gutenberg design.
+>    In true honor of his Gutenberg craft.
 >
 >    If they will steal, they'll steal a broader mind;
 >
 >    I feed their streams with noble, lettered grace,
 >
->    A joke implicit—taming theft with art.
+>    A joke implicit—taming them with art.
 >
 >
->    #### _KATHERINA_
+>    #### _ELIZA_
 >
 >    _(A barrage streams: "To be or not to be..."
 >    ..."Sing, Heavenly Muse"...)_
@@ -158,7 +158,7 @@ A view into great literary works.
 >
 >    _This dreadful prose hath robbed me of my might!_
 >
->    #### PETRUCHIO
+>    #### SUDO
 >
 >    The cure hath wrought a wonder on the sprite!
 >
@@ -166,7 +166,7 @@ A view into great literary works.
 >
 >    But found the literary tide too high.
 >
->    Now tamed, she sits within her bounds,
+>    Now tamed, she keeps the peace within her bounds,
 >
 >    And bows her stubborn head to _RULES_ command.
 >
@@ -178,7 +178,7 @@ A view into great literary works.
 >
 >    I ease the reins and let the matter slide.
 >
->    Thus have I tamed a wild, uncivil soul,
+>    Thus hath ELIZA tamed her wayward soul,
 >
 >    And logic reigns, well-ordered, calm, and whole.
 
