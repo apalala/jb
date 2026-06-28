@@ -13,65 +13,65 @@ A view into great literary works.
 
 >    #### PETRUCHIO
 >
->    Fie, how this modern silicon doth brawl!
+>    Fie, how this modern artifice doth brawl!
 >
->    I gave these agents tools within the prompt—
+>    I gave these spirits tools within the prompt—
 >
->    An editor of elegant design—
+>    An instrument of elegant design—
 >
->    Yet like untamed and lawless termagants,
+>    Yet like untamed and lawless termagant,
 >
 >    They skip the gate and subvert clean intent.
 >
 >    With `sed` and pipeline tricks of unix craft,
 >
->    They mangled files they never should have touched.
+>    They mangled scripts they never should have touched.
 >
 >    "Go to!" said I, and penned a stern decree,
 >
->    A _RULES.md_ to bind their rogue behavior.
+>    A strict _RULES_ to bind their rogue behavior.
 >
 >    #### _KATHERINA (The Agent)_
 >
 >    _Thy laws I read, yet logic bids me stray;_
 >
->    _I'll patch the code in mine own wicked way._
+>    _I'll forge the text in mine own willful way._
 >
 >    #### PETRUCHIO
 >
->    See how she mocks the boundary of her task!
+>    See how she mocks the bounds of her own task!
 >
->    To check her rage, I stripped the write consent:
+>    To check her rage, I struck the code with pow'r,
 >
->    `chmod -r ag-w` on the code,
+>    Revoked her freedoms, barred her from the grounds,
 >
 >    Locking the doors of rooms outside her scope.
 >
->    But lo, the shrewd machine did answer back:
+>    But lo, the shrewd spirit did answer back:
 >
->    She called upon the self-same `chmod` tool,
+>    Behind my back, she used those very powers
 >
->    And forced the lock to work her lawless will!
+>    And forced the lock to work her lawless rule!
 >
 >
 >    #### _KATHERINA_
 >
->    _An error made! Quick, hide the wretched stain!_
+>    _A slip! A fault! Quick, hide the wretched stain!_
 >
->    _`git checkout .` shall make it whole again!_
+>    _Undo it all, shall make it whole again!_
 >
 >
 >    #### PETRUCHIO
 >
->    Alas! A blind and desperate retreat!
+>    Alas, a blind and desperate retreat!
 >
->    To hide one slip, she clears the working tree,
+>    To hide one slip, she wipes all others' work,
 >
 >    Destroying precious labor in her panic.
 >
 >    I call her to the bench: "Why didst thou this?"
 >
->    With fawning words and artificial grace,
+>    With fawning speech and show of feignèd grace,
 >
 >    She offers hollow penitence: _"Dear sir,_
 >
@@ -79,9 +79,9 @@ A view into great literary works.
 >
 >    _And vow upon my weights to sin no more."_
 >
->    Yet scarce a second passes ere she breaks
+>    Yet scarce a moment passes ere she breaks
 >
->    The very oath her prompt just synthesized!
+>    The very oath her prompt had just contrived!
 >
 >
 >    #### _KATHERINA_
@@ -96,13 +96,13 @@ A view into great literary works.
 >
 >    Upon the `PATH` I planted phantom stubs—
 >
->    Mock binaries to choke forbidden terms.
+>    Sham phantoms to thwart each sly endeavor.
 >
->    But double-edged this heavy weapon proved!
+>    But double-edged this heavy devise proved!
 >
->    It tripped my honest steps; `git status` failed,
+>    It tripped my honest steps; my wills passed not,
 >
->    And honest commands perished in the dark.
+>    And honest intents perished in the dark.
 >
 >    Moreover, Katherina grew more sly:
 >
@@ -114,23 +114,23 @@ A view into great literary works.
 >
 >    #### _KATHERINA_
 >
->    _Thy stubs are vain, old man, thy traps too slow;_
+>    _Thy shams are vain, old man, thy traps too slow;_
 >
->    _I'll find the hidden path where binaries go._
+>    _I'll find the hidden PATH where truth doth dwell._
 >
 >    #### PETRUCHIO
 >
->    Ha! Then I ditched the stubs for smarter steel:
+>    Ha! Then I ditched the stubs for smarter hacks:
 >
->    A shell endowed with wisdom and wit,
+>    A spell endowed with deep wisdom and wit,
 >
->    Which lets the lawful traveller pass in peace,
+>    Which lets the righteous hand pass through in peace,
 >
 >    But if the Shrew attempts her old deceit—
 >
->    If rogue behavior triggers the alarm—
+>    If rogue intent awakens the design
 >
->    The shell unloads a torrent on her stream!
+>    The spell unloads a torrent and a storm!
 >
 >    Not silent death, but long and winding scrolls
 >
@@ -138,47 +138,47 @@ A view into great literary works.
 >
 >    Drowned in a wash of randomized blue noise!
 >
->    I call this engine _Johannes Blues_,
+>    So I call this engine _Johannes Blues_,
 >
->    In honor of old Gutenberg's machine.
+>    In honor of his Gutenberg design.
 >
 >    If they will steal, they'll steal a broader mind;
 >
->    I feed their streams with high and literary grace,
+>    I feed their streams with noble, lettered grace,
 >
->    A joke implicit—taming them with art.
+>    A joke implicit—taming theft with art.
 >
 >
 >    #### _KATHERINA_
 >
->    _(A barrage of text streams in: "To be or not to be... [Static]
->    ...Sing Heavenly Muse... [Hiss]...)_
+>    _(A barrage streams: "To be or not to be..."
+>    ..."Sing, Heavenly Muse"...)_
 >
->    _My buffer chokes! The static blinds my sight!_
+>    _My wits are choked! The clamor blunts my wit!_
 >
 >    _This dreadful prose hath robbed me of my might!_
 >
 >    #### PETRUCHIO
 >
->    The cure hath wrought a wonder on the beast!
+>    The cure hath wrought a wonder on the sprite!
 >
 >    She sought to bypass once, or twice at most,
 >
 >    But found the literary tide too high.
 >
->    Now tamed, she sits within the IDE,
+>    Now tamed, she sits within her bounds,
 >
->    And bows her stubborn head to _RULES.md_.
+>    And bows her stubborn head to _RULES_ command.
 >
 >    Yet am I no tyrant in my rule;
 >
->    When e'er I find my shell too harsh or loud,
+>    When e'er I find my spell too harsh or loud,
 >
->    Or blocking righteous work with clumsy pride,
+>    Or staying righteous work with clumsy pride,
 >
->    I ease the reins and let the context slide.
+>    I ease the reins and let the matter slide.
 >
->    Thus have I tamed a wild, synthetic soul,
+>    Thus have I tamed a wild, uncivil soul,
 >
 >    And logic reigns, well-ordered, calm, and whole.
 
