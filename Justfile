@@ -25,7 +25,10 @@ bash:
 python3:
     go build -o bin/python3 cmd/python/safe_python.go
 
-cmd: python3 bash git
+head:
+    go build -o bin/head cmd/head/safe_head.go
+
+cmd: python3 bash git head
 
 # === Go ===
 

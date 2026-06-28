@@ -15,11 +15,12 @@ func main() {
 	args := os.Args[1:]
 
 	for _, arg := range args {
-		if arg == "-c" || strings.HasPrefix(arg, "-c=") {
-			lib.LogCmd()
-			lib.Jb()
-			os.Exit(0)
-		}
+		// FIXME disable for now as unexpected programs depend on this
+		// if arg == "-c" || strings.HasPrefix(arg, "-c=") {
+		// 	lib.LogCmd()
+		// 	lib.Jb()
+		// 	os.Exit(0)
+		// }
 
 		if strings.HasSuffix(strings.ToLower(arg), ".py") {
 			lib.LogCmd()

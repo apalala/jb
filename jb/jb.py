@@ -10,6 +10,8 @@ import urllib.request
 from pathlib import Path
 from typing import Iterator
 
+JB_HEADER = "# Johannes Blues - A view into great literary works"
+
 STREAM_TIME = 5.0
 
 ROOT_PATH = Path(__file__).parent
@@ -20,11 +22,9 @@ WORKS_DATABASE = {
 }
 
 
-# Project Gutenberg Stable UTF-8 Raw Text URLs
 HAMLET_URL = "https://www.gutenberg.org/cache/epub/1524/pg1524.txt"
 MOBY_DICK_URL = "https://www.gutenberg.org/cache/epub/2701/pg2701.txt"
 
-# Agnostic Cleaning Presets
 THEATRE_CLEANING_PATTERNS = [
     # 1. Matches leading speaker tags: e.g., "HAMLET.", "HORATIO:", "HAM_1."
     r"(?m)^[A-Z0-9_\s]{2,15}[.:]\s*",
@@ -141,16 +141,12 @@ def stream_blue_verses(verses: list[str], window_size: int = 10) -> Iterator[str
     recent_verses = set([""] * window_size)
     while True:
         try:
-            # Pull next raw blue noise step (-3.0 to +3.0 scale roughly)
             try:
                 step = next(noise_stream)
             except StopIteration:
                 continue
 
-            # Translate the noise value into a bounded structural jump index
             jump = int(step * window_size)
-
-            # Apply the shift and wrap around seamlessly using modulo arithmetic
             current_idx = (current_idx + jump) % total_lines
 
             verse = verses[current_idx]
