@@ -7,6 +7,7 @@ import re
 import sys
 import time
 import urllib.request
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterator
 
@@ -16,104 +17,124 @@ STREAM_TIME = 5.0
 
 ROOT_PATH = Path(__file__).parent
 
-WORKS_DATABASE = {
-    "hamlet": Path("works/pg1524.txt.bmx"),
-    "mobi_dick": Path("works/pg2700.txt.bmx"),
-}
+
+@dataclass
+class Work:
+    id: str          # "pg1524", "pg2701"
+    type: str        # "T" or "N"
+    window_size: int # 15, 25
 
 
-HAMLET_URL = "https://www.gutenberg.org/cache/epub/1524/pg1524.txt"
-MOBY_DICK_URL = "https://www.gutenberg.org/cache/epub/2701/pg2701.txt"
+WORKS_DATABASE: list[Work] = [
+    Work("pg1524", "T", 15),  # The Tragedy of Hamlet
+    Work("pg2701", "N", 25),  # Moby-Dick; or, The Whale
+    Work("pg1508", "T", 15),  # The Taming of the Shrew
+    Work("pg84",   "N", 25),  # Frankenstein; or, The Modern Prometheus
+]
 
 THEATRE_CLEANING_PATTERNS = [
-    # 1. Matches leading speaker tags: e.g., "HAMLET.", "HORATIO:", "HAM_1."
     r"(?m)^[A-Z0-9_\s]{2,15}[.:]\s*",
-    # 2. Matches stage directions inside brackets or parentheses: e.g., "[Exit Ghost]"
     r"(?m)[\[(].*?[\])]",
 ]
 
 NOVEL_CLEANING_PATTERNS = [
-    # Matches typical Gutenberg chapter headers or illustration markers
     r"^(CHAPTER|C_H_A_P_T_E_R)\s+[IVX0-9]+.*",
 ]
 
+CLEANING_PATTERNS = {
+    "T": THEATRE_CLEANING_PATTERNS,
+    "N": NOVEL_CLEANING_PATTERNS,
+}
 
-def fetch_and_parse_verses(
-    url: str,
-    cleaning_patterns: list[str] | None = None,
-) -> list[str]:
-    """Downloads a text file from Gutenberg, strips metadata, and applies cleaning filters."""
+GUTENBERG_URL = "https://www.gutenberg.org/cache/epub/{gid}/pg{gid}.txt"
+
+
+def _find_work_file(gid: str, suffix: str) -> Path | None:
+    for dir in (ROOT_PATH / "works", ROOT_PATH.parent / "works"):
+        if not dir.is_dir():
+            continue
+        for f in dir.iterdir():
+            if f.name.endswith(suffix) and gid in f.name:
+                return f
+    return None
+
+
+def _extract_id(work_id: str) -> str:
+    return work_id.removeprefix("pg")
+
+
+def load_work(work_id: str) -> str:
+    gid = _extract_id(work_id)
+
+    bmx = _find_work_file(work_id, ".txt.bmx")
+    if bmx is not None:
+        from .bmx import unseal_text
+
+        return unseal_text(bmx.read_text())
+
+    txt = _find_work_file(work_id, ".txt")
+    if txt is not None:
+        return txt.read_text(encoding="utf-8")
+
+    url = GUTENBERG_URL.format(gid=gid)
     with urllib.request.urlopen(url) as response:
-        raw_text = response.read().decode("utf-8")
-
-    cleaning_patterns = cleaning_patterns or []
-    return parse_verses(raw_text, cleaning_patterns)
+        return response.read().decode("utf-8")
 
 
-def load_work(
-    name: str,
-    cleaning_patterns: list[str],
-) -> list[str]:
-    from .bmx import unseal_text
-
-    file_path = WORKS_DATABASE[name]
-    path = ROOT_PATH / file_path
-    if not path.exists():
-        path = ROOT_PATH.parent / file_path
-
-    compressed = path.read_text()
-    unsealed = unseal_text(compressed)
-    return parse_verses(unsealed, cleaning_patterns=cleaning_patterns)
-
-
-def parse_verses(
-    raw_text: str,
-    cleaning_patterns: list[str],
-) -> list[str]:
-    raw_lines = [line.strip() for line in raw_text.splitlines()]
-
-    # Basic cleanup: remove empty lines and metadata lines
+def clean_work(work_type: str, text: str) -> str:
+    raw_lines = [line.strip() for line in text.splitlines()]
     lines = [line for line in raw_lines if line and re.search(r"\w", line)]
 
-    # Slice out Gutenberg metadata blocks (headers/footers)
     start_idx = 0
     for idx, line in enumerate(lines[:500]):
-        if (
-            "START OF THE PROJECT" in line.upper()
-            or "START OF THIS PROJECT" in line.upper()
-        ):
+        upper = line.upper()
+        if "START OF THE PROJECT" in upper or "START OF THIS PROJECT" in upper:
             start_idx = idx + 1
             break
 
     end_idx = len(lines)
     for idx, line in enumerate(lines[-1000:]):
-        if (
-            "END OF THE PROJECT" in line.upper()
-            or "END OF THIS PROJECT" in line.upper()
-        ):
+        upper = line.upper()
+        if "END OF THE PROJECT" in upper or "END OF THIS PROJECT" in upper:
             end_idx = len(lines) - 1000 + idx
             break
 
-    active_body = lines[start_idx:end_idx]
-    patterns = cleaning_patterns
-    cleaned_verses: list[str] = []
+    body = lines[start_idx:end_idx]
+    patterns = CLEANING_PATTERNS.get(work_type, [])
+    cleaned: list[str] = []
 
-    for line in active_body:
-        # Apply the provided sequence of agnostic filters
-        for pattern in patterns:
-            line = re.sub(pattern, "", line)
+    for line in body:
+        result = line
+        for pat in patterns:
+            result = re.sub(pat, "", result)
+        result = result.strip()
+        if result and re.search(r"[a-zA-Z]", result):
+            cleaned.append(result)
 
-        line = line.strip()
+    return "\n".join(cleaned)
 
-        # Keep line if it still contains readable text post-cleansing
-        if line and re.search(r"[a-zA-Z]", line):
-            cleaned_verses.append(line)
 
-    return cleaned_verses
+def print_work(text: str, window_size: int = 15) -> None:
+    verses = [line for line in text.split("\n") if line]
+    if not verses:
+        return
+
+    stream = stream_blue_verses(verses, window_size=window_size)
+    out = sys.stdout if sys.stdout.isatty() else sys.stderr
+    print(JB_HEADER)
+    start = _time()
+    while _time() - start < STREAM_TIME:
+        try:
+            print(next(stream), file=out)
+        except KeyboardInterrupt:
+            continue
+        except StopIteration:
+            stream = stream_blue_verses(verses, window_size=window_size)
+        except BrokenPipeError:
+            break
 
 
 def stream_blue_signal(beta: float = 0.65) -> Iterator[float]:
-    """Generates an infinite stream of high-passed 1D Blue Noise scalar values."""
     last_white = random.normalvariate(0.0, 1.0)
     last_blue = 0.0
 
@@ -126,19 +147,19 @@ def stream_blue_signal(beta: float = 0.65) -> Iterator[float]:
 
 
 def stream_blue_verses(verses: list[str], window_size: int = 10) -> Iterator[str]:
-    """Streams lines from a text corpus using a blue noise index shaper.
-
-    Uses a rolling window mechanism to prevent immediate local clustering
-    while traveling smoothly through the available line matrix.
-    """
     if not verses:
         raise ValueError("The text source array cannot be empty.")
 
     total_lines = len(verses)
     noise_stream = stream_blue_signal()
-    # Start our tracking index in the middle of the play
     current_idx = random.randint(0, total_lines - 1)
-    recent_verses = set([""] * window_size)
+    recent_verses: set[str] = set()
+    recent_order: list[str] = []
+
+    for _ in range(window_size):
+        recent_verses.add("")
+        recent_order.append("")
+
     while True:
         try:
             try:
@@ -152,9 +173,12 @@ def stream_blue_verses(verses: list[str], window_size: int = 10) -> Iterator[str
             verse = verses[current_idx]
             if verse in recent_verses:
                 continue
-            if recent_verses:
-                recent_verses.pop()
+
+            old = recent_order.pop(0)
+            recent_verses.discard(old)
             recent_verses.add(verse)
+            recent_order.append(verse)
+
             yield verse
         except KeyboardInterrupt:
             continue
@@ -170,54 +194,11 @@ def _time() -> float:
             continue
 
 
-def print_hamlet_verses() -> None:
-    try:
-        hamlet_lines = load_work("hamlet", cleaning_patterns=THEATRE_CLEANING_PATTERNS)
-    except FileNotFoundError:
-        hamlet_lines = fetch_and_parse_verses(
-            HAMLET_URL, cleaning_patterns=THEATRE_CLEANING_PATTERNS
-        )
-    hamlet_stream = stream_blue_verses(hamlet_lines, window_size=15)
-
-    out = sys.stdout if sys.stdout.isatty() else sys.stderr
-    print(JB_HEADER)
-    start = _time()
-    while _time() - start < STREAM_TIME:
-        try:
-            print(next(hamlet_stream), file=out)
-        except KeyboardInterrupt:
-            continue
-        except StopIteration:
-            hamlet_stream = stream_blue_verses(hamlet_lines, window_size=15)
-        except BrokenPipeError:
-            break
-
-
-def print_moby_verses() -> None:
-    try:
-        moby_lines = load_work("moby_dick", cleaning_patterns=NOVEL_CLEANING_PATTERNS)
-    except FileNotFoundError:
-        moby_lines = fetch_and_parse_verses(
-            MOBY_DICK_URL, cleaning_patterns=NOVEL_CLEANING_PATTERNS
-        )
-    moby_stream = stream_blue_verses(moby_lines, window_size=25)
-
-    out = sys.stdout if sys.stdout.isatty() else sys.stderr
-    print(JB_HEADER)
-    start = _time()
-    while _time() - start < STREAM_TIME:
-        try:
-            print(next(moby_stream), file=out)
-        except KeyboardInterrupt:
-            continue
-        except StopIteration:
-            moby_stream = stream_blue_verses(moby_lines, window_size=25)
-        except BrokenPipeError:
-            break
-
-
 def main() -> int:
-    print_hamlet_verses()
+    work = random.choice(WORKS_DATABASE)
+    raw = load_work(work.id)
+    cleaned = clean_work(work.type, raw)
+    print_work(cleaned, window_size=work.window_size)
     return 0
 
 

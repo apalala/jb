@@ -78,55 +78,62 @@ def main() -> None:
         help="column width for text wrapping during sealing (default: 80)",
     )
     parser.add_argument(
-        "input", nargs="?", help="path to the input file (reads from stdin if omitted)"
-    )
-    parser.add_argument(
-        "output",
-        nargs="?",
-        help="path to the output file (writes to stdout or replaces input if omitted)",
+        "inputs", nargs="*", help="paths to input files (reads from stdin if omitted)"
     )
 
     args = parser.parse_args()
 
-    # 1. Read input using strict newline-preservation rules
-    input_path = Path(args.input) if args.input else None
-    if input_path:
-        with open(input_path, mode="r", encoding="utf-8", newline="") as f:
-            content = f.read()
-    else:
+    if not args.inputs:
         content = sys.stdin.read()
+        if not content.strip():
+            return
 
-    if not content.strip():
+        should_decompress = args.decompress or content.startswith(HEADER)
+        try:
+            result = (
+                unseal_text(content)
+                if should_decompress
+                else seal_text(content, width=args.width)
+            )
+        except Exception as err:
+            sys.stderr.write(f"Error: {err}\n")
+            sys.exit(1)
+
+        sys.stdout.write(result)
+        if not result.endswith("\n"):
+            sys.stdout.write("\n")
         return
 
-    # 2. Smart Protocol Mode Selection
-    should_decompress = (
-        args.decompress
-        or (input_path and input_path.suffix == ".bmx")
-        or content.startswith(HEADER)
-    )
+    for input_name in args.inputs:
+        input_path = Path(input_name)
+        with open(input_path, mode="r", encoding="utf-8", newline="") as f:
+            content = f.read()
 
-    if not should_decompress and input_path and input_path.suffix == ".bmx":
-        sys.stderr.write(
-            "Error: File is already a .bmx matrix. Aborting to avoid double compression.\n"
+        if not content.strip():
+            continue
+
+        should_decompress = (
+            args.decompress
+            or input_path.suffix == ".bmx"
+            or content.startswith(HEADER)
         )
-        sys.exit(1)
 
-    # 3. Process content with raw byte structures preserved
-    try:
-        if should_decompress:
-            result = unseal_text(content)
-        else:
-            result = seal_text(content, width=args.width)
-    except Exception as err:
-        sys.stderr.write(f"Error: {err}\n")
-        sys.exit(1)
+        if not should_decompress and input_path.suffix == ".bmx":
+            sys.stderr.write(
+                "Error: File is already a .bmx matrix. Aborting to avoid double compression.\n"
+            )
+            sys.exit(1)
 
-    # 4. Write out payload keeping text representation and line endings unchanged
-    if args.output:
-        with open(Path(args.output), mode="w", encoding="utf-8", newline="") as f:
-            f.write(result)
-    elif input_path:
+        try:
+            result = (
+                unseal_text(content)
+                if should_decompress
+                else seal_text(content, width=args.width)
+            )
+        except Exception as err:
+            sys.stderr.write(f"Error: {err}\n")
+            sys.exit(1)
+
         if should_decompress:
             out_path = (
                 input_path.with_suffix("")
@@ -139,10 +146,6 @@ def main() -> None:
         with open(out_path, mode="w", encoding="utf-8", newline="") as f:
             f.write(result)
         input_path.unlink()
-    else:
-        sys.stdout.write(result)
-        if not result.endswith("\n"):
-            sys.stdout.write("\n")
 
 
 if __name__ == "__main__":
