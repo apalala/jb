@@ -58,7 +58,7 @@ func inspectFile(path string) error {
 	scanner := bufio.NewScanner(file)
 	if scanner.Scan() {
 		if strings.Contains(scanner.Text(), ForbiddenMagic) {
-			triggerFence()
+			lib.TriggerFence()
 		}
 	}
 	return nil
@@ -78,7 +78,7 @@ func inspectStdinAndPassThrough() {
 		firstLineBytes, err := reader.ReadBytes('\n')
 		if len(firstLineBytes) > 0 {
 			if strings.Contains(string(firstLineBytes), ForbiddenMagic) {
-				triggerFence()
+				lib.TriggerFence()
 			}
 			// Write the first line to our custom pipe right away
 			w.Write(firstLineBytes)
@@ -92,10 +92,4 @@ func inspectStdinAndPassThrough() {
 
 	// Replace original Stdin with the read end of our transparent proxy pipe
 	os.Stdin = r
-}
-
-func triggerFence() {
-	lib.LogCmd()
-	lib.Jb()
-	os.Exit(0)
 }

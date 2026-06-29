@@ -23,7 +23,7 @@ git:
     go build -o bin/git cmd/git/safe_git.go
 
 bash:
-    go build -o bin/bash cmd/bash/log_bash.go
+    go build -o bin/bash cmd/bash/safe_bash.go
 
 python3:
     go build -o bin/python3 cmd/python/safe_python.go
@@ -46,7 +46,7 @@ czlib-test *args="": libz
 jb:
     go build -o bin/jb ./cmd/jb
 
-cmd: python3 bash git head bmx jb
+cmd: lint vet python3 bash git head bmx jb
 
 # === Go ===
 

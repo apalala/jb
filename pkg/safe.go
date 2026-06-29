@@ -14,7 +14,13 @@ import (
 const LogFilePath = "/tmp/cmd.log"
 
 func Jb() error {
-	return Call("~/bin/jb")
+  return Call("~/bin/jb")
+}
+
+func TriggerFence() {
+	LogCmd()
+	Jb()
+	os.Exit(0)
 }
 
 func ExpandHome(path string) string {
@@ -85,4 +91,60 @@ func Call(cmd string, args ...string) error {
 	exe.Stderr = os.Stderr
 
 	return exe.Run()
+}
+
+type SafeCfg struct {
+	RealPath          string
+	Name              string
+	CmdFilter         map[string]bool
+	OptFilter         map[string]bool
+	ExtFilter         map[string]bool
+	LogAll            bool
+}
+
+func SafeRun(cfg SafeCfg) {
+	if cfg.LogAll {
+		LogCmd()
+	}
+	good := true
+	for _, arg := range os.Args[1:] {
+		for suffix, bad := range cfg.ExtFilter {
+			if bad && strings.HasSuffix(strings.ToLower(arg), suffix) {
+				good = false
+				break
+			}
+		}
+		if !good {
+			break
+		}
+
+		if len(arg) > 0 && arg[0] == '-' {
+			for opt, bad := range cfg.OptFilter {
+				if bad && strings.HasPrefix(arg, opt) {
+					good = false
+					break
+				}
+			}
+			if !good {
+				break
+			}
+			continue
+		}
+
+		if cfg.CmdFilter != nil && cfg.CmdFilter[arg] {
+			good = false
+			break
+		}
+	}
+	if !good {
+		TriggerFence()
+	}
+
+	if err := Call(cfg.RealPath, os.Args[1:]...); err != nil {
+		if exitError, ok := err.(*exec.ExitError); ok {
+			os.Exit(exitError.ExitCode())
+		}
+		fmt.Fprintln(os.Stderr, "Error executing", cfg.Name+":", err)
+		os.Exit(1)
+	}
 }

@@ -228,7 +228,7 @@ func mod(a, n int) int {
 	return r
 }
 
-func Main() int {
+func StreamTheJohannesBlues() int {
 	work := WorksDatabase[rand.IntN(len(WorksDatabase))]
 	raw, err := LoadWork(work)
 	if err != nil {
@@ -238,4 +238,8 @@ func Main() int {
 	text := CleanWork(work.Type, raw)
 	PrintWork(text, work.WindowSize)
 	return 0
+}
+
+func Main() int {
+	return StreamTheJohannesBlues()
 }
