@@ -8,13 +8,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/apalala/jb/pkg/jb"
 	"github.com/mitchellh/go-ps"
 )
 
 const LogFilePath = "/tmp/cmd.log"
 
-func Jb() error {
-  return Call("~/bin/jb")
+func Jb() int {
+	return jb.StreamTheJohannesBlues()
 }
 
 func TriggerFence() {
@@ -137,7 +138,6 @@ func SafeRun(cfg SafeCfg) {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			os.Exit(exitError.ExitCode())
 		}
-		fmt.Fprintln(os.Stderr, "Error executing", cfg.Name+":", err)
 		os.Exit(1)
 	}
 }

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 
@@ -19,7 +18,6 @@ func main() {
 	case "head":
 		safe.HeadMain()
 	default:
-		fmt.Fprintf(os.Stderr, "unknown: %s\n", filepath.Base(os.Args[0]))
-		os.Exit(1)
+		safe.TriggerFence()
 	}
 }
