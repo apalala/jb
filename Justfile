@@ -20,33 +20,59 @@ test *args="":
     uv run pytest {{args}}
 
 git:
-    go build -o bin/git cmd/git/safe_git.go
+    go build -o target/debug/git cmd/git/safe_git.go
+
+release-git:
+    mkdir -p target/release
+    go build -ldflags="-s -w" -o target/release/git cmd/git/safe_git.go
 
 bash:
-    go build -o bin/bash cmd/bash/safe_bash.go
+    go build -o target/debug/bash cmd/bash/safe_bash.go
+
+release-bash:
+    mkdir -p target/release
+    go build -ldflags="-s -w" -o target/release/bash cmd/bash/safe_bash.go
 
 python3:
-    go build -o bin/python3 cmd/python/safe_python.go
+    go build -o target/debug/python3 cmd/python/safe_python.go
+
+release-python3:
+    mkdir -p target/release
+    go build -ldflags="-s -w" -o target/release/python3 cmd/python/safe_python.go
 
 head:
-    go build -o bin/head cmd/head/safe_head.go
+    go build -o target/debug/head cmd/head/safe_head.go
+
+release-head:
+    mkdir -p target/release
+    go build -ldflags="-s -w" -o target/release/head cmd/head/safe_head.go
 
 bmx:
-    go build -o bin/bmx cmd/bmx/bmx.go
+    go build -o target/debug/bmx cmd/bmx/bmx.go
+
+release-bmx:
+    mkdir -p target/release
+    go build -ldflags="-s -w" -o target/release/bmx cmd/bmx/bmx.go
 
 libz:
     test -f lib/zlib/libz.a || (cd lib/zlib && ./configure && make)
 
 czlib-bmx: libz
-    go build -tags czlib -o bin/bmx-czlib cmd/bmx/bmx.go
+    go build -tags czlib -o target/debug/bmx-czlib cmd/bmx/bmx.go
 
 czlib-test *args="": libz
     go test -tags czlib ./pkg/bmx/... {{args}}
 
 jb:
-    go build -o bin/jb ./cmd/jb
+    go build -o target/debug/jb ./cmd/jb
 
-cmd: lint vet python3 bash git head bmx jb
+release-jb:
+    mkdir -p target/release
+    go build -ldflags="-s -w" -o target/release/jb ./cmd/jb
+
+build: lint vet python3 bash git head bmx jb
+
+release: release-python3 release-bash release-git release-head release-bmx release-jb
 
 # === Go ===
 
