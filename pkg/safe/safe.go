@@ -15,7 +15,7 @@ import (
 const LogFilePath = "/tmp/cmd.log"
 
 func Jb() int {
-	return jb.StreamTheJohannesBlues()
+	return jb.Main()
 }
 
 func TriggerFence() {

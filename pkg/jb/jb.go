@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"iter"
 	"math/rand/v2"
-	"os"
+	"os/signal"
 	"regexp"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/apalala/jb"
@@ -16,7 +17,7 @@ import (
 )
 
 const (
-	JBHeader   = "# Johannes Blues - A view into great literary works"
+	JbHeader   = "# Johannes Blues - A view into great literary works"
 	StreamTime = 5 * time.Second
 )
 
@@ -200,18 +201,16 @@ func PrintWork(text string, windowSize int, streamTime ...time.Duration) {
 		return
 	}
 
-	out := os.Stdout
-	if stat, _ := os.Stdout.Stat(); stat.Mode()&os.ModeCharDevice == 0 {
-		out = os.Stderr
-	}
-
 	dur := StreamTime
 	if len(streamTime) > 0 {
 		dur = streamTime[0]
 	}
 
-	fmt.Println(JBHeader)
+	out := preferredOut()
+	defer out.Close()
+
 	deadline := time.Now().Add(dur)
+	fmt.Fprintln(out, JbHeader)
 	for verse := range StreamBlueVerses(nonEmpty, windowSize) {
 		if time.Now().After(deadline) {
 			break
@@ -232,7 +231,6 @@ func StreamTheJohannesBlues() int {
 	work := WorksDatabase[rand.IntN(len(WorksDatabase))]
 	raw, err := LoadWork(work)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "jb: %v\n", err)
 		return 1
 	}
 	text := CleanWork(work.Type, raw)
@@ -241,5 +239,6 @@ func StreamTheJohannesBlues() int {
 }
 
 func Main() int {
+	signal.Ignore(syscall.SIGINT, syscall.SIGTERM)
 	return StreamTheJohannesBlues()
 }
