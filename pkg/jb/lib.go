@@ -15,10 +15,10 @@ func preferredOut() *os.File {
 	}
 	if isDevNull(out) {
 		termPath := getTerminalDescriptor()
-        tty, err := os.OpenFile(termPath, os.O_WRONLY, 0)
-        if err == nil {
-            out = tty
-        }
+		tty, err := os.OpenFile(termPath, os.O_WRONLY, 0)
+		if err == nil {
+			out = tty
+		}
 	}
 	return out
 }
@@ -28,11 +28,11 @@ func outputType(file *os.File) int {
 
 	// Check if stdout is a standard interactive terminal
 	if (stat.Mode() & os.ModeCharDevice) != 0 {
-		return 0  // Interactive terminal
+		return 0 // Interactive terminal
 	} else if (stat.Mode() & os.ModeNamedPipe) != 0 {
-		return 1  // Named pipe
+		return 1 // Named pipe
 	} else {
-		return 2  // File or other
+		return 2 // File or other
 	}
 }
 

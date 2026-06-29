@@ -98,7 +98,7 @@ vendor: tidy
 gotest *args="":
     go test ./pkg/... {{args}}
 
-vet:
+vet: gofmt
     go vet -structtag=false ./...
 
 tidy:

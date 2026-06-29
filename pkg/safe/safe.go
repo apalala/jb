@@ -88,12 +88,12 @@ func Call(cmd string, args ...string) error {
 }
 
 type SafeCfg struct {
-	RealPath          string
-	Name              string
-	CmdFilter         map[string]bool
-	OptFilter         map[string]bool
-	ExtFilter         map[string]bool
-	LogAll            bool
+	RealPath  string
+	Name      string
+	CmdFilter map[string]bool
+	OptFilter map[string]bool
+	ExtFilter map[string]bool
+	LogAll    bool
 }
 
 func SafeRun(cfg SafeCfg) {
