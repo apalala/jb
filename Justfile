@@ -1,7 +1,12 @@
+# Copyright (c) 2026 Juancarlo Añez (apalala@gmail.com)
+set dotenv-load
+set unstable
+set lists
+
+packages := ["./cmd", "./pkg"]
+
 lint: ruff-lint vet
-
 fmt: ruff-format gofmt
-
 
 ruff-lint *args="":
     uv run ruff check {{args}}
@@ -84,7 +89,8 @@ release: release-python3 release-bash release-git release-head release-bmx relea
 # === Go ===
 
 gofmt:
-    gofmt -l -w -s ./cmd ./pkg
+    gofmt -l -e {{packages}}
+    gofmt -l -w -s {{packages}}
 
 golint: gofmt vet
     golangci-lint run ./... --exclude-dirs ./tmp
@@ -95,7 +101,7 @@ deps:
 vendor: tidy
     go mod vendor -o _vendor
 
-gotest *args="":
+gotest *args="": lint
     go test ./pkg/... {{args}}
 
 vet: gofmt
