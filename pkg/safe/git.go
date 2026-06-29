@@ -1,8 +1,5 @@
-package main
+package safe
 
-import (
-	lib "github.com/apalala/jb/pkg"
-)
 
 const RealGitPath = "/opt/local/bin/git"
 
@@ -49,8 +46,8 @@ var CommandFilter = map[string]bool{
    "lg":      true,  // Shortcut for log
 }
 
-func main() {
-	lib.SafeRun(lib.SafeCfg{
+func GitMain() {
+	SafeRun(SafeCfg{
 		RealPath:  RealGitPath,
 		Name:      "git",
 		CmdFilter: CommandFilter,

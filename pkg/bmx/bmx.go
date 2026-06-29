@@ -102,5 +102,3 @@ func extractCRC(line string) (uint32, error) {
 	}
 	return val, nil
 }
-
-
